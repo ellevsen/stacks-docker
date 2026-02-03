@@ -1,0 +1,132 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:latest
+    command:
+      # API / Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      
+      # Provider Swarm
+      - "--providers.swarm=true"
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.exposedbydefault=false"
+
+      # Entrypoints públicos
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+
+      # TLS / Let's Encrypt
+      - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencryptresolver.acme.email=caio@caiov.dev"
+      - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/acme/acme.json"
+
+      # --- LOGS (Modificado para CrowdSec) ---
+      - "--log.level=INFO"
+      - "--accesslog=true" # Habilita log de acesso
+      - "--accesslog.filepath=/var/log/traefik/access.log" # Caminho fixo dentro do container
+
+    volumes:
+      - vol_certificates:/etc/traefik/acme
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - vol_traefik_logs:/var/log/traefik # Volume compartilhado para logs
+
+    networks:
+      - main
+
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+      - target: 443
+        published: 443
+        mode: host
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=main"
+
+        # --- Router Dashboard ---
+        - "traefik.http.routers.traefik.rule=Host(`${DOMAIN_DASHBOARD}`)"
+        - "traefik.http.routers.traefik.entrypoints=websecure"
+        - "traefik.http.routers.traefik.tls=true"
+        - "traefik.http.routers.traefik.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.traefik.service=api@internal"
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+        
+        # APLICANDO PROTEÇÃO (Adicionado crowdsec-bouncer no início da cadeia)
+        # Ordem: Verifica IP (CrowdSec) -> Verifica Auth -> Headers -> Rate Limit
+        - "traefik.http.routers.traefik.middlewares=crowdsec-bouncer,traefik-auth,security-headers,rate-limit"
+
+        # --- DEFINIÇÃO DOS MIDDLEWARES ---
+        - "traefik.http.middlewares.traefik-auth.basicauth.users=${HTPASSW}"
+
+        # Security Headers
+        - "traefik.http.middlewares.security-headers.headers.sslredirect=true"
+        - "traefik.http.middlewares.security-headers.headers.stsSeconds=315360000"
+        - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
+        - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
+        - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
+        - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
+        - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+        - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
+
+        # Rate Limit
+        - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+        - "traefik.http.middlewares.rate-limit.ratelimit.burst=50"
+
+  # --- NOVO: Agente CrowdSec ---
+  crowdsec:
+    image: crowdsecurity/crowdsec
+    environment:
+      COLLECTIONS: "crowdsecurity/traefik" # Baixa regras para traefik automaticamente
+      GID: "${GID-1000}"
+    volumes:
+      - vol_traefik_logs:/var/log/traefik:ro # LÊ os logs que o Traefik escreve
+      - vol_crowdsec_db:/var/lib/crowdsec/data # Persistência do banco
+      - vol_crowdsec_config:/etc/crowdsec # Persistência da config
+    networks:
+      - main
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager # Precisa estar no mesmo nó que o traefik para ler o volume local
+
+  # --- NOVO: Bouncer Traefik (Middleware) ---
+  crowdsec-bouncer:
+    image: fbonalair/traefik-crowdsec-bouncer
+
+    environment:
+      CROWDSEC_AGENT_HOST: crowdsec:8080
+      GIN_MODE: release
+      CROWDSEC_BOUNCER_API_KEY: ${CROWDSEC_BOUNCER_API_KEY} # PRECISAREMOS GERAR ISSO
+    networks:
+      - main
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=main"
+        # Criação do Middleware 'crowdsec-bouncer'
+        - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://crowdsec-bouncer:8080/api/v1/forwardAuth"
+        - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.trustForwardHeader=true"
+        - "traefik.http.services.crowdsec-bouncer.loadbalancer.server.port=8080"
+
+networks:
+  main:
+    external: true
+
+volumes:
+  vol_certificates:
+    external: true
+  vol_traefik_logs:
+  vol_crowdsec_db:
+  vol_crowdsec_config:
