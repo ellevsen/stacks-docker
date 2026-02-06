@@ -1,7 +1,7 @@
 services:
 
   traefik:
-    image: traefik:v3.6.7
+    image: traefik:latest
     command:
       # API / Dashboard
       - "--api.dashboard=true"
@@ -108,7 +108,7 @@ services:
 
   # --- CrowdSec Agent ---
   crowdsec:
-    image: crowdsecurity/crowdsec:v1.6.8
+    image: crowdsecurity/crowdsec:latest
     environment:
       COLLECTIONS: "crowdsecurity/traefik"
       GID: "${GID-1000}"
@@ -150,7 +150,7 @@ services:
 
   # --- CrowdSec Bouncer (Traefik Middleware) ---
   crowdsec-bouncer:
-    image: fbonalair/traefik-crowdsec-bouncer:0.4.0
+    image: fbonalair/traefik-crowdsec-bouncer:latest
     environment:
       CROWDSEC_AGENT_HOST: crowdsec:8080
       GIN_MODE: release

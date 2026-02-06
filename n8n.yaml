@@ -97,7 +97,7 @@ services:
       resources:
         limits:
           cpus: "4"
-          memory: 5120M
+          memory: 4096M
       restart_policy:
         condition: any
         delay: 10s
@@ -237,7 +237,7 @@ services:
 
   n8n_worker:
     image: n8nio/n8n:stable
-    command: worker --concurrency=30
+    command: worker --concurrency=15
 
     networks:
       - portainer_CyberView
@@ -324,14 +324,14 @@ services:
 
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 3
       placement:
         constraints:
           - node.role == manager
       resources:
         limits:
           cpus: "3"
-          memory: 4096M
+          memory: 3072M
       restart_policy:
         condition: any
         delay: 10s
