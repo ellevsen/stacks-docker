@@ -75,7 +75,7 @@ services:
         - "traefik.http.routers.portainer.tls=true"
         - "traefik.http.routers.portainer.tls.certresolver=letsencryptresolver"
         - "traefik.http.services.portainer.loadbalancer.server.port=9000"
-        - "traefik.http.routers.portainer.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm"
+        - "traefik.http.routers.portainer.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file"
         - "traefik.swarm.network=main"
 
 networks:

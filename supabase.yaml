@@ -102,7 +102,7 @@ services:
         - traefik.http.routers.kong.entrypoints=websecure
         - traefik.http.routers.kong.tls.certresolver=letsencryptresolver
         - traefik.http.routers.kong.tls=true
-        - traefik.http.routers.kong.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
+        - traefik.http.routers.kong.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
   auth:
     image: supabase/gotrue:v2.177.0

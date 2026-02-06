@@ -29,6 +29,14 @@ services:
       - "--accesslog=true"
       - "--accesslog.filepath=/var/log/traefik/access.log"
 
+      # File provider: middlewares globais (rate-limit, security-headers) carregados antes do Swarm
+      - "--providers.file.filename=/etc/traefik/dynamic/dynamic.yml"
+      - "--providers.file.watch=true"
+
+    configs:
+      - source: traefik_global_middlewares
+        target: /etc/traefik/dynamic/dynamic.yml
+
     volumes:
       - vol_certificates:/etc/traefik/acme
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -85,26 +93,11 @@ services:
         - "traefik.http.routers.traefik.service=api@internal"
         - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
-        # Middlewares: CrowdSec -> Auth -> Headers -> Rate Limit
-        - "traefik.http.routers.traefik.middlewares=crowdsec-bouncer,traefik-auth,security-headers,rate-limit"
+        # Middlewares: CrowdSec -> Auth -> Headers@file -> RateLimit@file
+        - "traefik.http.routers.traefik.middlewares=crowdsec-bouncer,traefik-auth,security-headers@file,rate-limit@file"
 
-        # --- DEFINIÇÃO DOS MIDDLEWARES ---
+        # --- MIDDLEWARES LOCAIS (só dashboard) ---
         - "traefik.http.middlewares.traefik-auth.basicauth.users=caio:$$apr1$$ll89czOq$$oNIAsXgF2NZfrZp0JHZN2/"
-
-        # Security Headers
-        - "traefik.http.middlewares.security-headers.headers.sslredirect=true"
-        - "traefik.http.middlewares.security-headers.headers.stsSeconds=315360000"
-        - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
-        - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
-        - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
-        - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
-        - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
-        - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
-
-        # Rate Limit
-        - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
-        - "traefik.http.middlewares.rate-limit.ratelimit.period=1s"
-        - "traefik.http.middlewares.rate-limit.ratelimit.burst=50"
 
   # --- CrowdSec Agent ---
   crowdsec:
@@ -190,6 +183,13 @@ services:
 networks:
   portainer_CyberView:
     external: true
+
+# Config criado no Portainer (Configs & Secrets). Nome exato: traefik_global_middlewares
+# Conteúdo: copie o arquivo traefik-dynamic.yml desta pasta
+configs:
+  traefik_global_middlewares:
+    external: true
+    name: traefik_global_middlewares
 
 volumes:
   vol_certificates:

@@ -201,7 +201,7 @@ services:
         - traefik.http.routers.evolution.service=evolution
         - traefik.http.services.evolution.loadbalancer.server.port=8080
         - traefik.http.services.evolution.loadbalancer.passHostHeader=true
-        - traefik.http.routers.evolution.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
+        - traefik.http.routers.evolution.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
 volumes:
   evolution_instances:

@@ -54,7 +54,7 @@ services:
         - traefik.http.routers.rabbitmq.tls.certresolver=letsencryptresolver
         - traefik.http.routers.rabbitmq.service=rabbitmq
         - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
-        - traefik.http.routers.rabbitmq.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
+        - traefik.http.routers.rabbitmq.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
 volumes:
   rabbitmq_data:

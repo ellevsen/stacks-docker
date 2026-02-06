@@ -1,0 +1,22 @@
+# Middlewares globais carregados pelo File Provider.
+# Evita o erro "rate-limit@swarm does not exist" (race no Swarm).
+# Referencie como rate-limit@file e security-headers@file nos routers.
+
+http:
+  middlewares:
+    rate-limit:
+      rateLimit:
+        average: 100
+        period: 1s
+        burst: 50
+
+    security-headers:
+      headers:
+        sslRedirect: true
+        stsSeconds: 315360000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true

@@ -113,7 +113,7 @@ services:
         - traefik.http.services.n8n_editor.loadbalancer.passHostHeader=1
         - traefik.http.middlewares.limit-upload.buffering.maxRequestBodyBytes=500000000
         - traefik.http.middlewares.limit-upload.buffering.memRequestBodyBytes=10000000
-        - traefik.http.routers.n8n_editor.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
+        - traefik.http.routers.n8n_editor.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
 
 ## --------------------------- ORION - WEBHOOK --------------------------- ##
@@ -230,7 +230,7 @@ services:
         - traefik.http.services.n8n_webhook.loadbalancer.passHostHeader=1
         - traefik.http.middlewares.limit-upload.buffering.maxRequestBodyBytes=500000000
         - traefik.http.middlewares.limit-upload.buffering.memRequestBodyBytes=10000000
-        - traefik.http.routers.n8n_webhook.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
+        - traefik.http.routers.n8n_webhook.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
 
 ## --------------------------- ORION - WORKER --------------------------- ##
@@ -450,7 +450,7 @@ services:
         - traefik.http.routers.n8n_mcp.service=n8n_mcp
         - traefik.http.services.n8n_mcp.loadbalancer.server.port=5678
         - traefik.http.services.n8n_mcp.loadbalancer.passHostHeader=true
-        - traefik.http.routers.n8n_mcp.middlewares=nogzip,crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
+        - traefik.http.routers.n8n_mcp.middlewares=nogzip,crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
       update_config:
         parallelism: 1
         delay: 30s
