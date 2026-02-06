@@ -1,0 +1,52 @@
+version: "3.7"
+services:
+
+## --------------------------- ORION --------------------------- ##
+
+  rabbitmq:
+    image: rabbitmq:3.13.7-management
+    command: rabbitmq-server
+
+    hostname: rabbitmq
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+    networks:
+      - portainer_CyberView
+
+    environment:
+      ## Dados de acesso
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+      RABBITMQ_DEFAULT_VHOST: "/"
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.rabbitmq.rule=Host(`${RABBITMQ_DOMAIN}`)
+        - traefik.http.routers.rabbitmq.entrypoints=websecure
+        - traefik.http.routers.rabbitmq.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.rabbitmq.service=rabbitmq
+        - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
+
+## --------------------------- ORION --------------------------- ##
+
+volumes:
+  rabbitmq_data:
+    external: true
+
+networks:
+  portainer_CyberView:
+    external: true
+    name: portainer_CyberView
