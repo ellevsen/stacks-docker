@@ -57,10 +57,10 @@ services:
         mode: host
 
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]
+      test: ["CMD", "traefik", "healthcheck", '--ping']
       interval: 10s
-      timeout: 5s
-      retries: 3
+      timeout: 10s
+      retries: 5
       start_period: 15s
 
     logging:
