@@ -34,5 +34,4 @@ volumes:
 
 networks:
   main:
-    external: true
     name: main
