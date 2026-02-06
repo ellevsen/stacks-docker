@@ -7,6 +7,9 @@ services:
       - "--api.dashboard=true"
       - "--api.insecure=false"
 
+      # Ping (obrigatório para o healthcheck)
+      - "--ping=true"
+
       # Provider Swarm
       - "--providers.swarm=true"
       - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
