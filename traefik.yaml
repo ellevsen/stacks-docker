@@ -103,6 +103,7 @@ services:
 
         # Rate Limit
         - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+        - "traefik.http.middlewares.rate-limit.ratelimit.period=1s"
         - "traefik.http.middlewares.rate-limit.ratelimit.burst=50"
 
   # --- CrowdSec Agent ---
