@@ -1,13 +1,12 @@
-version: "3.8"
-
 services:
+
   traefik:
-    image: traefik:latest
+    image: traefik:v3.6.7
     command:
       # API / Dashboard
       - "--api.dashboard=true"
       - "--api.insecure=false"
-      
+
       # Provider Swarm
       - "--providers.swarm=true"
       - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
@@ -25,15 +24,15 @@ services:
       - "--certificatesresolvers.letsencryptresolver.acme.email=caio@caiov.dev"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/acme/acme.json"
 
-      # --- LOGS (Modificado para CrowdSec) ---
+      # LOGS (CrowdSec)
       - "--log.level=INFO"
-      - "--accesslog=true" # Habilita log de acesso
-      - "--accesslog.filepath=/var/log/traefik/access.log" # Caminho fixo dentro do container
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
 
     volumes:
       - vol_certificates:/etc/traefik/acme
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - vol_traefik_logs:/var/log/traefik # Volume compartilhado para logs
+      - vol_traefik_logs:/var/log/traefik
 
     networks:
       - portainer_CyberView
@@ -46,10 +45,34 @@ services:
         published: 443
         mode: host
 
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
     deploy:
       placement:
         constraints:
           - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
       labels:
         - "traefik.enable=true"
         - "traefik.swarm.network=portainer_CyberView"
@@ -61,9 +84,8 @@ services:
         - "traefik.http.routers.traefik.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.traefik.service=api@internal"
         - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-        
-        # APLICANDO PROTEÇÃO (Adicionado crowdsec-bouncer no início da cadeia)
-        # Ordem: Verifica IP (CrowdSec) -> Verifica Auth -> Headers -> Rate Limit
+
+        # Middlewares: CrowdSec -> Auth -> Headers -> Rate Limit
         - "traefik.http.routers.traefik.middlewares=crowdsec-bouncer,traefik-auth,security-headers,rate-limit"
 
         # --- DEFINIÇÃO DOS MIDDLEWARES ---
@@ -83,39 +105,83 @@ services:
         - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
         - "traefik.http.middlewares.rate-limit.ratelimit.burst=50"
 
-  # --- NOVO: Agente CrowdSec ---
+  # --- CrowdSec Agent ---
   crowdsec:
-    image: crowdsecurity/crowdsec
+    image: crowdsecurity/crowdsec:v1.6.8
     environment:
-      COLLECTIONS: "crowdsecurity/traefik" # Baixa regras para traefik automaticamente
+      COLLECTIONS: "crowdsecurity/traefik"
       GID: "${GID-1000}"
     volumes:
-      - vol_traefik_logs:/var/log/traefik:ro # LÊ os logs que o Traefik escreve
-      - vol_crowdsec_db:/var/lib/crowdsec/data # Persistência do banco
-      - vol_crowdsec_config:/etc/crowdsec # Persistência da config
+      - vol_traefik_logs:/var/log/traefik:ro
+      - vol_crowdsec_db:/var/lib/crowdsec/data
+      - vol_crowdsec_config:/etc/crowdsec
     networks:
       - portainer_CyberView
+
+    healthcheck:
+      test: ["CMD", "cscli", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
     deploy:
       placement:
         constraints:
-          - node.role == manager # Precisa estar no mesmo nó que o traefik para ler o volume local
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
 
-  # --- NOVO: Bouncer Traefik (Middleware) ---
+  # --- CrowdSec Bouncer (Traefik Middleware) ---
   crowdsec-bouncer:
-    image: fbonalair/traefik-crowdsec-bouncer
-
+    image: fbonalair/traefik-crowdsec-bouncer:0.4.0
     environment:
       CROWDSEC_AGENT_HOST: crowdsec:8080
       GIN_MODE: release
-      CROWDSEC_BOUNCER_API_KEY: ${CROWDSEC_BOUNCER_API_KEY} # PRECISAREMOS GERAR ISSO
+      CROWDSEC_BOUNCER_API_KEY: ${CROWDSEC_BOUNCER_API_KEY}
     networks:
       - portainer_CyberView
+
+    read_only: true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
     deploy:
       replicas: 1
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
       labels:
         - "traefik.enable=true"
         - "traefik.swarm.network=portainer_CyberView"
-        # Criação do Middleware 'crowdsec-bouncer'
+        # Middleware 'crowdsec-bouncer'
         - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.address=http://crowdsec-bouncer:8080/api/v1/forwardAuth"
         - "traefik.http.middlewares.crowdsec-bouncer.forwardauth.trustForwardHeader=true"
         - "traefik.http.services.crowdsec-bouncer.loadbalancer.server.port=8080"
@@ -127,7 +193,6 @@ networks:
 volumes:
   vol_certificates:
     external: true
-  # Novos volumes persistentes
   vol_traefik_logs:
   vol_crowdsec_db:
   vol_crowdsec_config:

@@ -1,19 +1,31 @@
-version: "3.7"
 services:
 
-  ## --------------------------- ORION --------------------------- ##
-
   postgres:
-    image: pgvector/pgvector:pg17 ## Versão do postgres
-    container_name: postgres
+    image: pgvector/pgvector:pg17
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - portainer_CyberView ## Nome da rede interna
+      - portainer_CyberView
     environment:
-      ## Senha do postgres 
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - TZ=${TIMEZONE}
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
     deploy:
       mode: replicated
       replicas: 1
@@ -24,10 +36,13 @@ services:
         limits:
           cpus: "1"
           memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
 
   pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pgadmin
+    image: dpage/pgadmin4:9.12.0
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_USER}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
@@ -35,15 +50,37 @@ services:
       - pgadmin_data:/var/lib/pgadmin
     networks:
       - portainer_CyberView
-    depends_on:
-      - postgres
-      
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:80/misc/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
           - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.pgadmin.rule=Host(`${PGADMIN_DOMAIN}`)"
@@ -51,6 +88,7 @@ services:
         - "traefik.http.routers.pgadmin.entrypoints=websecure"
         - "traefik.http.routers.pgadmin.tls=true"
         - "traefik.http.routers.pgadmin.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.pgadmin.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm"
 
 volumes:
   postgres_data:

@@ -1,12 +1,8 @@
-version: "3.7"
 services:
-
-## --------------------------- ORION --------------------------- ##
 
   rabbitmq:
     image: rabbitmq:3.13.7-management
     command: rabbitmq-server
-
     hostname: rabbitmq
 
     volumes:
@@ -16,11 +12,26 @@ services:
       - portainer_CyberView
 
     environment:
-      ## Dados de acesso
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
       RABBITMQ_DEFAULT_VHOST: "/"
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
 
     deploy:
       mode: replicated
@@ -31,7 +42,11 @@ services:
       resources:
         limits:
           cpus: "1"
-          memory: 1024M
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
       labels:
         - traefik.enable=true
         - traefik.http.routers.rabbitmq.rule=Host(`${RABBITMQ_DOMAIN}`)
@@ -39,8 +54,7 @@ services:
         - traefik.http.routers.rabbitmq.tls.certresolver=letsencryptresolver
         - traefik.http.routers.rabbitmq.service=rabbitmq
         - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
-
-## --------------------------- ORION --------------------------- ##
+        - traefik.http.routers.rabbitmq.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
 
 volumes:
   rabbitmq_data:

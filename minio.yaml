@@ -1,27 +1,37 @@
-version: "3.7"
 services:
 
-## --------------------------- ORION --------------------------- ##
-
   minio:
-    image: quay.io/minio/minio:latest ## Versão do Minio
+    image: quay.io/minio/minio:RELEASE.2025-10-15T17-29-55Z
     command: server /data --console-address ":9001"
 
     volumes:
       - minio_data:/data
 
     networks:
-      - portainer_CyberView ## Nome da rede interna
+      - portainer_CyberView
 
     environment:
-      ## Dados de acesso
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD} ## Precisa conter no minimo 8 caracteres
-
-      ## Url do minio
-      - MINIO_BROWSER_REDIRECT_URL=${MINIO_BROWSER_REDIRECT_URL} ## Url do minio
-      - MINIO_SERVER_URL=${MINIO_SERVER_URL} ## Url do s3 | Comente esta linha caso tiver erro ao fazer login
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_BROWSER_REDIRECT_URL=${MINIO_BROWSER_REDIRECT_URL}
+      - MINIO_SERVER_URL=${MINIO_SERVER_URL}
       - MINIO_STS_DURATION=${MINIO_STS_DURATION}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
 
     deploy:
       mode: replicated
@@ -29,22 +39,32 @@ services:
       placement:
         constraints:
           - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
       labels:
         - traefik.enable=true
-        - traefik.http.routers.minio_public.rule=Host(`${DOMAIN_S3}`) ## Url do s3
+        ## S3 API
+        - traefik.http.routers.minio_public.rule=Host(`${DOMAIN_S3}`)
         - traefik.http.routers.minio_public.entrypoints=websecure
         - traefik.http.routers.minio_public.tls.certresolver=letsencryptresolver
         - traefik.http.services.minio_public.loadbalancer.server.port=9000
         - traefik.http.services.minio_public.loadbalancer.passHostHeader=true
         - traefik.http.routers.minio_public.service=minio_public
-        - traefik.http.routers.minio_console.rule=Host(`${MAIN_DOMAIN}`) ## Url do minio
+        - traefik.http.routers.minio_public.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
+        ## Console
+        - traefik.http.routers.minio_console.rule=Host(`${MAIN_DOMAIN}`)
         - traefik.http.routers.minio_console.entrypoints=websecure
         - traefik.http.routers.minio_console.tls.certresolver=letsencryptresolver
         - traefik.http.services.minio_console.loadbalancer.server.port=9001
         - traefik.http.services.minio_console.loadbalancer.passHostHeader=true
         - traefik.http.routers.minio_console.service=minio_console
-
-## --------------------------- ORION --------------------------- ##
+        - traefik.http.routers.minio_console.middlewares=crowdsec-bouncer@swarm,security-headers@swarm,rate-limit@swarm
 
 volumes:
   minio_data:
@@ -52,6 +72,6 @@ volumes:
     name: minio_data
 
 networks:
-  portainer_CyberView: ## Nome da rede interna
+  portainer_CyberView:
     external: true
-    name: portainer_CyberView ## Nome da rede interna
+    name: portainer_CyberView
