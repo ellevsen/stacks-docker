@@ -1,0 +1,201 @@
+services:
+
+## --------------------------- JOB OPPORTUNITIES MANAGER --------------------------- ##
+
+  postgres_jobs:
+    image: postgres:15-alpine
+    environment:
+      - TZ=America/Sao_Paulo
+      - POSTGRES_DB=job_opportunities
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - portainer_CyberView
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d job_opportunities"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+
+  backend:
+    image: job-opportunities-backend:latest
+    env_file:
+      - .env.production
+    depends_on:
+      - postgres_jobs
+    ports:
+      - "3001:3001"
+    networks:
+      - portainer_CyberView
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - traefik.enable=true
+        - traefik.swarm.network=portainer_CyberView
+        - traefik.http.routers.job-opportunities-api.rule=Host(`${API_DOMAIN:-api-jobs.caiov.dev}`)
+        - traefik.http.services.job-opportunities-api.loadbalancer.server.port=3001
+        - traefik.http.routers.job-opportunities-api.service=job-opportunities-api
+        - traefik.http.routers.job-opportunities-api.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.job-opportunities-api.entrypoints=websecure
+        - traefik.http.routers.job-opportunities-api.tls=true
+        - traefik.http.routers.job-opportunities-api.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
+
+  frontend:
+    image: job-opportunities-frontend:latest
+    env_file:
+      - .env.production
+    ports:
+      - "3550:3000"
+    depends_on:
+      - backend
+    networks:
+      - portainer_CyberView
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - traefik.enable=true
+        - traefik.swarm.network=portainer_CyberView
+        - traefik.http.routers.job-opportunities.rule=Host(`${HOST_DOMAIN:-jobs.caiov.dev}`)
+        - traefik.http.services.job-opportunities.loadbalancer.server.port=3000
+        - traefik.http.routers.job-opportunities.service=job-opportunities
+        - traefik.http.routers.job-opportunities.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.job-opportunities.entrypoints=websecure
+        - traefik.http.routers.job-opportunities.tls=true
+        - traefik.http.routers.job-opportunities.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
+
+  mermaid-validator:
+    image: mermaid-validator:latest
+    env_file:
+      - .env.production
+    ports:
+      - "3002:3002"
+    networks:
+      - portainer_CyberView
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3002/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+
+## --------------------------- JOB OPPORTUNITIES MANAGER --------------------------- ##
+
+volumes:
+  postgres_data:
+    external: true
+    name: job_opportunities_postgres_data
+
+networks:
+  portainer_CyberView:
+    external: true
+    name: portainer_CyberView
