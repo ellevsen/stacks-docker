@@ -1,0 +1,53 @@
+services:
+
+  portfolio:
+    image: caiov_portfolio_portfolio:latest
+    networks:
+      - portainer_CyberView
+
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - "traefik.enable=true"
+        - "traefik.swarm.network=portainer_CyberView"
+        - "traefik.http.routers.portfolio.rule=Host(`caiov.dev`)"
+        - "traefik.http.routers.portfolio.entrypoints=websecure"
+        - "traefik.http.routers.portfolio.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.portfolio.loadbalancer.server.port=3000"
+        - "traefik.http.routers.portfolio.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file"
+
+networks:
+  portainer_CyberView:
+    external: true
