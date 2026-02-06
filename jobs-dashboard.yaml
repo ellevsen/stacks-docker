@@ -63,8 +63,6 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       - postgres_jobs
-    ports:
-      - "3001:3001"
     networks:
       - portainer_CyberView
 
@@ -118,8 +116,6 @@ services:
       - HOST_DOMAIN=${HOST_DOMAIN}
       - FRONTEND_PORT=${FRONTEND_PORT:-3000}
       - VITE_N8N_CHAT_WEBHOOK_URL=${VITE_N8N_CHAT_WEBHOOK_URL:-}
-    ports:
-      - "3550:3000"
     depends_on:
       - backend
     networks:
@@ -172,8 +168,6 @@ services:
       - NODE_ENV=${NODE_ENV:-production}
       - TZ=${TZ:-America/Sao_Paulo}
       - MERMAID_PORT=${MERMAID_PORT:-3002}
-    ports:
-      - "3002:3002"
     networks:
       - portainer_CyberView
 
