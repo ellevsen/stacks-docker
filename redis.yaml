@@ -15,7 +15,7 @@ services:
       - redis_data:/data
 
     networks:
-      - main 
+      - portainer_CyberView 
 
     deploy:
       placement:
@@ -33,5 +33,5 @@ volumes:
     name: redis_data
 
 networks:
-  main:
-    name: main
+  portainer_CyberView:
+    name: portainer_CyberView
