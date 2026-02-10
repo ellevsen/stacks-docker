@@ -5,7 +5,7 @@ services:
     command: webhook
 
     networks:
-      - portainer_CyberView
+      - swarm_public
 
     environment:
       - EXECUTIONS_MODE=queue
@@ -92,6 +92,7 @@ services:
       replicas: 2
       placement:
         constraints:
+          - node.labels.role == worker
           - node.labels.app == n8n
       resources:
         limits:
@@ -119,7 +120,7 @@ services:
     command: webhook
 
     networks:
-      - portainer_CyberView
+      - swarm_public
 
     environment:
       - EXECUTIONS_MODE=queue
@@ -206,7 +207,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.role == worker
+          - node.labels.role == worker
           - node.labels.app == n8n
       resources:
         limits:
@@ -233,6 +234,6 @@ services:
         failure_action: rollback
 
 networks:
-  portainer_CyberView:
+  swarm_public:
     external: true
-    name: portainer_CyberView
+    name: swarm_public

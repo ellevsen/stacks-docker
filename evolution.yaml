@@ -7,7 +7,7 @@ services:
       - evolution_instances:/evolution/instances
 
     networks:
-      - portainer_CyberView
+      - swarm_public
 
     environment:
       ## Configurações Gerais
@@ -183,7 +183,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.role == manager
+          - node.labels.role == worker
       resources:
         limits:
           cpus: "2"
@@ -209,6 +209,5 @@ volumes:
     name: evolution_instances
 
 networks:
-  portainer_CyberView:
+  swarm_public:
     external: true
-    name: portainer_CyberView
