@@ -7,7 +7,7 @@ services:
     command: start
 
     networks:
-      - portainer_CyberView
+      - swarm_public
 
     environment:
       - EXECUTIONS_MODE=queue
@@ -93,7 +93,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.role == manager
+          - node.labels.role == manager
           - node.labels.app == n8n
       resources:
         limits:
@@ -117,6 +117,6 @@ services:
         - traefik.http.routers.n8n_editor.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
 networks:
-  portainer_CyberView:
+  swarm_public:
     external: true
-    name: portainer_CyberView
+    name: swarm_public
