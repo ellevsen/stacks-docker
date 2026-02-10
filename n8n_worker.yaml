@@ -1,0 +1,110 @@
+services:
+
+  n8n_worker:
+    image: n8nio/n8n:stable
+    command: worker --concurrency=15
+
+    networks:
+      - portainer_CyberView
+
+    environment:
+      - EXECUTIONS_MODE=queue
+      - NODE_OPTIONS=${NODE_OPTIONS}
+
+      ## Database Configuration
+      - DB_TYPE=${DB_TYPE}
+      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
+      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
+      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT}
+      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+      - N8N_PAYLOAD_SIZE_MAX=${N8N_PAYLOAD_SIZE_MAX}
+
+      ## Binary Data Configuration
+      - N8N_DEFAULT_BINARY_DATA_MODE=${N8N_DEFAULT_BINARY_DATA_MODE}
+      - N8N_BINARY_DATA_MANAGER_MODE=${N8N_BINARY_DATA_MANAGER_MODE}
+
+      ## Node.js Configuration
+      - NODE_FUNCTION_ALLOW_BUILTIN=${NODE_FUNCTION_ALLOW_BUILTIN}
+      - NODE_FUNCTION_ALLOW_EXTERNAL=${NODE_FUNCTION_ALLOW_EXTERNAL}
+
+      ## Encryption
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+
+      ## URLs and Hosting
+      - N8N_HOST=${N8N_HOST}
+      - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_PROTOCOL=${N8N_PROTOCOL}
+
+      ## Execution Configuration
+      - N8N_RUNNERS_MODE=${N8N_RUNNERS_MODE}
+      - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=${OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS}
+      - EXECUTIONS_DATA_PRUNE=${EXECUTIONS_DATA_PRUNE}
+      - EXECUTIONS_DATA_MAX_AGE=${EXECUTIONS_DATA_MAX_AGE}
+
+      ## Node Environment
+      - NODE_ENV=${NODE_ENV}
+
+      ## Community Nodes
+      - N8N_REINSTALL_MISSING_PACKAGES=${N8N_REINSTALL_MISSING_PACKAGES}
+      - N8N_COMMUNITY_PACKAGES_ENABLED=${N8N_COMMUNITY_PACKAGES_ENABLED}
+      - N8N_NODE_PATH=${N8N_NODE_PATH}
+
+      ## SMTP Configuration
+      - N8N_SMTP_SENDER=${N8N_SMTP_SENDER}
+      - N8N_SMTP_USER=${N8N_SMTP_USER}
+      - N8N_SMTP_PASS=${N8N_SMTP_PASS}
+      - N8N_SMTP_HOST=${N8N_SMTP_HOST}
+      - N8N_SMTP_PORT=${N8N_SMTP_PORT}
+      - N8N_SMTP_SSL=${N8N_SMTP_SSL}
+
+      ## Redis Configuration
+      - QUEUE_BULL_REDIS_HOST=${QUEUE_BULL_REDIS_HOST}
+      - QUEUE_BULL_REDIS_PORT=${QUEUE_BULL_REDIS_PORT}
+      - QUEUE_BULL_REDIS_DB=${QUEUE_BULL_REDIS_DB}
+      - QUEUE_BULL_REDIS_PASSWORD=${QUEUE_BULL_REDIS_PASSWORD}
+      - N8N_TRUSTED_PROXIES=${N8N_TRUSTED_PROXIES}
+
+      ## Timezone
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${TZ}
+
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'n8n' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 3
+      placement:
+        constraints:
+          - node.role == worker
+          - node.labels.app == n8n
+      resources:
+        limits:
+          cpus: "3"
+          memory: 2048M
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+
+
+networks:
+  portainer_CyberView:
+    external: true
+    name: portainer_CyberView
