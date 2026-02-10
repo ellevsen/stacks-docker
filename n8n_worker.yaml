@@ -92,7 +92,6 @@ services:
       replicas: 3
       placement:
         constraints:
-          - node.role == worker
           - node.labels.app == n8n
       resources:
         limits:
