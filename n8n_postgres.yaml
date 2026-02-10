@@ -1,0 +1,57 @@
+# Postgres dedicado ao n8n (editor, worker, webhook).
+# Nos stacks do n8n use: DB_POSTGRESDB_HOST=n8n_postgres
+
+services:
+
+  n8n_postgres:
+    image: pgvector/pgvector:pg17
+    volumes:
+      - n8n_postgres_data:/var/lib/postgresql/data
+    networks:
+      - swarm_public
+    environment:
+      - POSTGRES_USER=${N8N_POSTGRES_USER:-n8n}
+      - POSTGRES_PASSWORD=${N8N_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${N8N_POSTGRES_DB:-n8n}
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == worker
+          - node.labels.app == n8n
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+
+volumes:
+  n8n_postgres_data:
+    external: true
+    name: n8n_postgres_data
+
+networks:
+  swarm_public:
+    external: true
