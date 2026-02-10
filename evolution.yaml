@@ -1,5 +1,103 @@
 services:
 
+  evolution_postgres:
+    image: postgres:17-alpine
+    volumes:
+      - evolution_postgres_data:/var/lib/postgresql/data
+    networks:
+      - swarm_public
+    environment:
+      - POSTGRES_USER=${EVOLUTION_POSTGRES_USER:-evolution}
+      - POSTGRES_PASSWORD=${EVOLUTION_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${EVOLUTION_POSTGRES_DB:-evolution}
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == worker
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+
+  evolution_redis:
+    image: redis:7.4.7-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${EVOLUTION_REDIS_PASSWORD}
+      - --port
+      - "6379"
+      - --maxmemory
+      - "384mb"
+      - --maxmemory-policy
+      - "allkeys-lru"
+
+    volumes:
+      - evolution_redis_data:/data
+
+    networks:
+      - swarm_public
+
+    environment:
+      - EVOLUTION_REDIS_PASSWORD=${EVOLUTION_REDIS_PASSWORD}
+
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$EVOLUTION_REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    read_only: true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == worker
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+
   evolution:
     image: evoapicloud/evolution-api:v2.3.7
 
@@ -24,10 +122,10 @@ services:
       - CONFIG_SESSION_PHONE_CLIENT=DigitalConnect
       - CONFIG_SESSION_PHONE_NAME=Chrome
 
-      ## Configuração do Banco de Dados
+      ## Configuração do Banco de Dados (Postgres da stack: evolution_postgres)
       - DATABASE_ENABLED=true
       - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=${DATABASE_CONNECTION_URI}
+      - DATABASE_CONNECTION_URI=${DATABASE_CONNECTION_URI:-postgresql://${EVOLUTION_POSTGRES_USER:-evolution}:${EVOLUTION_POSTGRES_PASSWORD}@evolution_postgres:5432/${EVOLUTION_POSTGRES_DB:-evolution}}
       - DATABASE_CONNECTION_CLIENT_NAME=evolution
       - DATABASE_SAVE_DATA_INSTANCE=true
       - DATABASE_SAVE_DATA_NEW_MESSAGE=true
@@ -54,10 +152,10 @@ services:
       - CHATWOOT_IMPORT_DATABASE_CONNECTION_URI=${CHATWOOT_IMPORT_DATABASE_CONNECTION_URI}
       - CHATWOOT_IMPORT_PLACEHOLDER_MEDIA_MESSAGE=false
 
-      ## Configuração do Cache
-      - CACHE_REDIS_ENABLED=false
-      - CACHE_REDIS_URI=redis://redis:6379/8
-      - CACHE_REDIS_PASSWORD=${CACHE_REDIS_PASSWORD}
+      ## Configuração do Cache (Redis da stack: evolution_redis)
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://:${EVOLUTION_REDIS_PASSWORD}@evolution_redis:6379/8
+      - CACHE_REDIS_PASSWORD=${EVOLUTION_REDIS_PASSWORD}
       - CACHE_REDIS_PREFIX_KEY=evolution
       - CACHE_REDIS_SAVE_INSTANCES=false
       - CACHE_LOCAL_ENABLED=false
@@ -207,6 +305,12 @@ volumes:
   evolution_instances:
     external: true
     name: evolution_instances
+  evolution_postgres_data:
+    external: true
+    name: evolution_postgres_data
+  evolution_redis_data:
+    external: true
+    name: evolution_redis_data
 
 networks:
   swarm_public:
