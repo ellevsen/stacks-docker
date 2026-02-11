@@ -1,7 +1,7 @@
 services:
 
   portfolio:
-    image: caiov_portfolio_portfolio:latest
+    image: ellevsen/caiov_portfolio_portfolio:latest
     networks:
       - swarm_public
 
