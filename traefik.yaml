@@ -20,6 +20,8 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.dashboard.address=:8080"
+
 
       # TLS / Let's Encrypt
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
@@ -89,18 +91,18 @@ services:
         - "traefik.swarm.network=swarm_public"
 
         # --- Router Dashboard ---
-        - "traefik.http.routers.traefik.rule=Host(`traefik.agdigitalconnect.com`)"
-        - "traefik.http.routers.traefik.entrypoints=websecure"
-        - "traefik.http.routers.traefik.tls=true"
-        - "traefik.http.routers.traefik.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.traefik.service=api@internal"
-        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+        - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.agdigitalconnect.com`)"
+        - "traefik.http.routers.traefik-dashboard.entrypoints=dashboard"
+        - "traefik.http.routers.traefik-dashboard.tls=true"
+        - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.traefik-dashboard.service=api@internal"
+        - "traefik.http.services.traefik-dashboard.loadbalancer.server.port=8080"
 
         # Middlewares: CrowdSec -> Auth -> Headers@file -> RateLimit@file
-        - "traefik.http.routers.traefik.middlewares=crowdsec-bouncer,traefik-auth,security-headers@file,rate-limit@file"
+        - "traefik.http.routers.traefik-dashboard.middlewares=crowdsec-bouncer,traefik-auth,security-headers@file,rate-limit@file"
 
         # --- MIDDLEWARES LOCAIS (só dashboard) ---
-        - "traefik.http.middlewares.traefik-auth.basicauth.users=caio:$$apr1$$ll89czOq$$oNIAsXgF2NZfrZp0JHZN2/"
+        #- "traefik.http.middlewares.traefik-auth.basicauth.users=caio:$$apr1$$ll89czOq$$oNIAsXgF2NZfrZp0JHZN2/"
 
   # --- CrowdSec Agent ---
   crowdsec:
