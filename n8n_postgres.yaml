@@ -57,6 +57,8 @@ services:
       DATABASE_URL: postgres://${N8N_POSTGRES_USER:-n8n}:${N8N_POSTGRES_PASSWORD}@n8n_postgres:5432/${N8N_POSTGRES_DB:-n8n}
       LISTEN_ADDR: "0.0.0.0"
       LISTEN_PORT: "5432"
+      # Ignora parâmetros que o n8n envia na conexão (ex.: statement_timeout=300000).
+      IGNORE_STARTUP_PARAMETERS: "extra_float_digits,statement_timeout"
       # Session pooling: mantém a sessão por cliente (compatível com prepared statements do TypeORM/n8n).
       POOL_MODE: session
       SERVER_RESET_QUERY: "DISCARD ALL"
@@ -67,8 +69,12 @@ services:
       CLIENT_IDLE_TIMEOUT: "0"
       QUERY_TIMEOUT: "0"
       TZ: ${TIMEZONE:-America/Sao_Paulo}
+      # Para o healthcheck conectar com o usuário do pool (evita "no such user: postgres").
+      PGPASSWORD: ${N8N_POSTGRES_PASSWORD}
+      N8N_POSTGRES_USER: ${N8N_POSTGRES_USER:-n8n}
+      N8N_POSTGRES_DB: ${N8N_POSTGRES_DB:-n8n}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U \"$N8N_POSTGRES_USER\" -d \"$N8N_POSTGRES_DB\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
