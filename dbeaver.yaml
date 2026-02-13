@@ -1,0 +1,58 @@
+# CloudBeaver (DBeaver web) — cliente de bancos de dados via browser.
+# Defina DBEAVER_DOMAIN no env do deploy (ex: dbeaver.agdigitalconnect.com).
+# Primeiro acesso: crie o usuário admin na tela inicial.
+
+services:
+
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    volumes:
+      - cloudbeaver_workspace:/opt/cloudbeaver/workspace
+    networks:
+      - swarm_public
+    environment:
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8978/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dbeaver.rule=Host(`${DBEAVER_DOMAIN}`)"
+        - "traefik.http.routers.dbeaver.entrypoints=websecure"
+        - "traefik.http.routers.dbeaver.tls=true"
+        - "traefik.http.routers.dbeaver.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.cloudbeaver.loadbalancer.server.port=8978"
+        - "traefik.http.routers.dbeaver.service=cloudbeaver"
+        - "traefik.http.routers.dbeaver.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file"
+        - "traefik.swarm.network=swarm_public"
+
+volumes:
+  cloudbeaver_workspace:
+
+networks:
+  swarm_public:
+    external: true

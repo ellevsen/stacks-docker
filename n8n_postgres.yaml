@@ -1,5 +1,6 @@
 # Postgres dedicado ao n8n (editor, worker, webhook).
-# Nos stacks do n8n use: DB_POSTGRESDB_HOST=n8n_postgres
+# PgBouncer faz pool de conexões na frente do Postgres.
+# Nos stacks do n8n use: DB_POSTGRESDB_HOST=n8n_pgbouncer e DB_POSTGRESDB_PORT=5432
 
 services:
 
@@ -42,6 +43,54 @@ services:
         limits:
           cpus: "1"
           memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+
+  n8n_pgbouncer:
+    image: edoburu/pgbouncer:latest
+    networks:
+      - swarm_public
+    environment:
+      # Conexão ao Postgres (backend). Host = nome do serviço na rede.
+      DATABASE_URL: postgres://${N8N_POSTGRES_USER:-n8n}:${N8N_POSTGRES_PASSWORD}@n8n_postgres:5432/${N8N_POSTGRES_DB:-n8n}
+      LISTEN_ADDR: "0.0.0.0"
+      LISTEN_PORT: "5432"
+      # Session pooling: mantém a sessão por cliente (compatível com prepared statements do TypeORM/n8n).
+      POOL_MODE: session
+      SERVER_RESET_QUERY: "DISCARD ALL"
+      MAX_CLIENT_CONN: "200"
+      DEFAULT_POOL_SIZE: "20"
+      # Timeouts alinhados ao uso por editor/worker/webhook.
+      SERVER_IDLE_TIMEOUT: "600"
+      CLIENT_IDLE_TIMEOUT: "0"
+      QUERY_TIMEOUT: "0"
+      TZ: ${TIMEZONE:-America/Sao_Paulo}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == worker
+          - node.labels.app == n8n
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
       restart_policy:
         condition: any
         delay: 5s
