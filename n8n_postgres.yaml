@@ -17,7 +17,7 @@ services:
       - TZ=${TIMEZONE:-America/Sao_Paulo}
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -64,6 +64,7 @@ services:
       SERVER_RESET_QUERY: "DISCARD ALL"
       MAX_CLIENT_CONN: "200"
       DEFAULT_POOL_SIZE: "20"
+      AUTH_TYPE: scram-sha-256
       # Timeouts alinhados ao uso por editor/worker/webhook.
       SERVER_IDLE_TIMEOUT: "600"
       CLIENT_IDLE_TIMEOUT: "0"
@@ -74,7 +75,7 @@ services:
       N8N_POSTGRES_USER: ${N8N_POSTGRES_USER:-n8n}
       N8N_POSTGRES_DB: ${N8N_POSTGRES_DB:-n8n}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U \"$N8N_POSTGRES_USER\" -d \"$N8N_POSTGRES_DB\" || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U n8n -d n8n || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
