@@ -177,6 +177,9 @@ services:
         condition: any
         delay: 5s
         max_attempts: 5
+      placement:
+        constraints:
+          - node.role == manager
       labels:
         - "traefik.enable=true"
         - "traefik.swarm.network=swarm_public"
