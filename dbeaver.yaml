@@ -13,7 +13,7 @@ services:
     environment:
       - TZ=${TIMEZONE:-America/Sao_Paulo}
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8978/ || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8978/ > /dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
