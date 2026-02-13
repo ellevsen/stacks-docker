@@ -57,8 +57,8 @@ services:
       DATABASE_URL: postgres://${N8N_POSTGRES_USER:-n8n}:${N8N_POSTGRES_PASSWORD}@n8n_postgres:5432/${N8N_POSTGRES_DB:-n8n}
       LISTEN_ADDR: "0.0.0.0"
       LISTEN_PORT: "5432"
-      # Ignora parâmetros que o n8n envia na conexão (ex.: statement_timeout=300000).
-      IGNORE_STARTUP_PARAMETERS: "extra_float_digits,statement_timeout"
+      # Ignora parâmetros que o n8n/TypeORM envia na conexão (options contém -c statement_timeout=...).
+      IGNORE_STARTUP_PARAMETERS: "extra_float_digits,statement_timeout,options"
       # Session pooling: mantém a sessão por cliente (compatível com prepared statements do TypeORM/n8n).
       POOL_MODE: session
       SERVER_RESET_QUERY: "DISCARD ALL"
