@@ -58,7 +58,7 @@ services:
       LISTEN_ADDR: "0.0.0.0"
       LISTEN_PORT: "5432"
       # Ignora parâmetros que o n8n envia na conexão (ex.: statement_timeout=300000).
-      IGNORE_STARTUP_PARAMETERS: "extra_float_digits,statement_timeout"
+      IGNORE_STARTUP_PARAMETERS: "extra_float_digits"
       # Session pooling: mantém a sessão por cliente (compatível com prepared statements do TypeORM/n8n).
       POOL_MODE: session
       SERVER_RESET_QUERY: "DISCARD ALL"
