@@ -13,7 +13,7 @@ services:
       - EXECUTIONS_MODE=queue
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
       - NODE_OPTIONS=${NODE_OPTIONS}
-
+      - N8N_METRICS=true
       - DB_TYPE=${DB_TYPE}
       - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
       - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
@@ -24,7 +24,6 @@ services:
 
       ## Binary Data Configuration
       - N8N_DEFAULT_BINARY_DATA_MODE=${N8N_DEFAULT_BINARY_DATA_MODE}
-      - N8N_AVAILABLE_BINARY_DATA_MODES=${N8N_AVAILABLE_BINARY_DATA_MODES}
 
       ## Node.js Configuration
       - NODE_FUNCTION_ALLOW_BUILTIN=${NODE_FUNCTION_ALLOW_BUILTIN}
@@ -70,7 +69,6 @@ services:
 
       ## Timezone
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
-      - TZ=${TZ}
 
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]

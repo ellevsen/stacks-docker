@@ -10,6 +10,7 @@ services:
     environment:
       - EXECUTIONS_MODE=queue
       - NODE_OPTIONS=${NODE_OPTIONS}
+      - N8N_METRICS=true
 
       ## Database Configuration
       - DB_TYPE=${DB_TYPE}
@@ -19,10 +20,9 @@ services:
       - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
       - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
       - N8N_PAYLOAD_SIZE_MAX=${N8N_PAYLOAD_SIZE_MAX}
-
+      - N8N_METRICS=true  
       ## Binary Data Configuration
       - N8N_DEFAULT_BINARY_DATA_MODE=${N8N_DEFAULT_BINARY_DATA_MODE}
-      - N8N_AVAILABLE_BINARY_DATA_MODES=${N8N_AVAILABLE_BINARY_DATA_MODES}
 
       ## Node.js Configuration
       - NODE_FUNCTION_ALLOW_BUILTIN=${NODE_FUNCTION_ALLOW_BUILTIN}
@@ -69,7 +69,6 @@ services:
 
       ## Timezone
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
-      - TZ=${TZ}
 
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'n8n' || exit 1"]
