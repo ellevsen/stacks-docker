@@ -10,7 +10,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - job_opportunities_postgres_data:/var/lib/postgresql/data
     networks:
       - swarm_public
 
@@ -201,9 +201,8 @@ services:
 ## --------------------------- JOB OPPORTUNITIES MANAGER --------------------------- ##
 
 volumes:
-  postgres_data:
-    external: true
-    name: job_opportunities_postgres_data
+  job_opportunities_postgres_data:
+
 
 networks:
   swarm_public:
