@@ -44,7 +44,7 @@ services:
         delay: 5s
         max_attempts: 5
 
-  backend:
+  backend_jobs:
     image: ellevsen/job-opportunities-backend:latest
     environment:
       - NODE_ENV=${NODE_ENV:-production}
@@ -103,7 +103,7 @@ services:
         - traefik.http.routers.job-opportunities-api.tls=true
         - traefik.http.routers.job-opportunities-api.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
-  frontend:
+  frontend_jobs:
     image: ellevsen/job-opportunities-frontend:latest
     environment:
       - NODE_ENV=${NODE_ENV:-production}
@@ -113,7 +113,7 @@ services:
       - FRONTEND_PORT=${FRONTEND_PORT:-3000}
       - VITE_N8N_CHAT_WEBHOOK_URL=${VITE_N8N_CHAT_WEBHOOK_URL:-}
     depends_on:
-      - backend
+      - backend_jobs
     networks:
       - swarm_public
 
@@ -158,7 +158,7 @@ services:
         - traefik.http.routers.job-opportunities.tls=true
         - traefik.http.routers.job-opportunities.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
-  mermaid-validator:
+  mermaid-validator_jobs:
     image: ellevsen/mermaid-validator:latest
     environment:
       - NODE_ENV=${NODE_ENV:-production}
