@@ -4,7 +4,7 @@
 services:
 
   n8n_redis:
-    image: redis:7.4.7-alpine
+    image: redis:latest
     command:
       - redis-server
       - --appendonly
@@ -13,10 +13,6 @@ services:
       - ${N8N_REDIS_PASSWORD}
       - --port
       - "6379"
-      - --maxmemory
-      - "1024mb"
-      - --maxmemory-policy
-      - "noeviction"
 
     volumes:
       - n8n_redis_data:/data
