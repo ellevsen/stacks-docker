@@ -3,7 +3,7 @@ services:
 ## --------------------------- ORION - EDITOR --------------------------- ##
 
   n8n_editor:
-    image: n8nio/n8n:2.7.3
+    image: n8nio/n8n:2.7.0
     command: start
 
     networks:
