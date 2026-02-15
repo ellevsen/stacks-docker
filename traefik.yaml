@@ -90,7 +90,7 @@ services:
         - "traefik.swarm.network=swarm_public"
 
         # --- Router Dashboard (doc: PathPrefix /api e /dashboard obrigatórios; entrypoint websecure = HTTPS 443) ---
-        - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.agdigitalconnect.com`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+        - "traefik.http.routers.traefik-dashboard.rule=Host(`${DASHBOARD_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
         - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
         - "traefik.http.routers.traefik-dashboard.tls=true"
         - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencryptresolver"
