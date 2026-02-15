@@ -96,7 +96,6 @@ services:
         - "traefik.http.routers.traefik-dashboard.tls=true"
         - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.traefik-dashboard.service=api@internal"
-        - "traefik.http.services.traefik-dashboard.loadbalancer.server.port=8081"
 
         # Middlewares: CrowdSec -> Auth -> Headers@file -> RateLimit@file
         - "traefik.http.routers.traefik-dashboard.middlewares=crowdsec-bouncer,traefik-auth,security-headers@file,rate-limit@file"
