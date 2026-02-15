@@ -5,7 +5,7 @@ services:
     command:
       # API / Dashboard (doc: https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/)
       - "--api=true"
-      - "--api.insecure=false"
+      - "--api.dashboard=true"
 
       # Ping (obrigatório para o healthcheck)
       - "--ping=true"
@@ -95,21 +95,11 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.swarm.network=swarm_public"
-
-        # --- Router Dashboard (doc: rule com PathPrefix /api e /dashboard; service api@internal; dummy port p/ Swarm) ---
         - "traefik.http.routers.dashboard.rule=Host(`${DASHBOARD_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
-        - "traefik.http.routers.dashboard.entrypoints=websecure"
-        - "traefik.http.routers.dashboard.tls=true"
-        - "traefik.http.routers.dashboard.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.dashboard.service=api@internal"
-        # Swarm exige port no serviço; api@internal não tem backend real — dummy port (doc Traefik)
-        - "traefik.http.services.traefik-traefik.loadbalancer.server.port=9999"
-
-        # Middlewares: CrowdSec -> Auth -> Headers@file -> RateLimit@file
-        - "traefik.http.routers.dashboard.middlewares=crowdsec-bouncer,traefik-auth,security-headers@file,rate-limit@file"
-
-        # --- MIDDLEWARES LOCAIS (só dashboard) ---
-        #- "traefik.http.middlewares.traefik-auth.basicauth.users=caio:$$apr1$$ll89czOq$$oNIAsXgF2NZfrZp0JHZN2/"
+        - "traefik.http.middlewares.auth.basicauth.users=caio:$$apr1$$ll89czOq$$oNIAsXgF2NZfrZp0JHZN2/"
+        - "traefik.http.routers.dashboard.middlewares=crowdsec-bouncer,auth,security-headers@file,rate-limit@file"    
+        - "traefik.http.services.dummy-svc.loadbalancer.server.port=9999"
 
   # --- CrowdSec Agent ---
   crowdsec:
