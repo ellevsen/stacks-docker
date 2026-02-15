@@ -6,6 +6,9 @@ services:
       # API / Dashboard (doc: https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/)
       - "--api=true"
       - "--api.dashboard=true"
+      # API apenas na rede interna: entrypoint "traefik" na 8080; porta NÃO publicada no host
+      - "--api.insecure=true"
+      - "--entrypoints.traefik.address=:8080"
 
       # Ping (obrigatório para o healthcheck)
       - "--ping=true"
@@ -56,6 +59,7 @@ services:
     networks:
       - swarm_public
 
+    # 80 e 443 publicados no host; 8080 NÃO — API/dashboard em http://traefik:8080 só entre containers
     ports:
       - target: 80
         published: 80
@@ -63,6 +67,7 @@ services:
       - target: 443
         published: 443
         mode: host
+      # 8080 intencionalmente não publicado: só acessível na rede swarm_public (ex.: curl http://traefik:8080/api/)
 
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", '--ping']
