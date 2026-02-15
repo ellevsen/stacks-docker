@@ -1,0 +1,81 @@
+# Task Runner sidecar para os workers do n8n (modo externo).
+# Executa código JavaScript e Python dos Code Nodes em processo isolado.
+# Conecta ao broker do worker (porta 5679) via overlay network.
+#
+# Variáveis obrigatórias no deploy:
+#   N8N_RUNNERS_AUTH_TOKEN  – mesmo token usado no editor/worker/webhook
+#   N8N_RUNNERS_TASK_BROKER_URI – ex: http://n8n_worker:5679
+#
+# A versão da imagem n8nio/runners DEVE corresponder à do n8nio/n8n.
+
+services:
+
+  n8n_task_runner:
+    image: n8nio/runners:stable
+
+    networks:
+      - swarm_public
+
+    environment:
+      ## Autenticação com o broker (mesmo token dos workers)
+      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
+
+      ## URI do broker — aponta para o serviço do worker na overlay network
+      - N8N_RUNNERS_TASK_BROKER_URI=${N8N_RUNNERS_TASK_BROKER_URI}
+
+      ## Concorrência: quantas tarefas (Code Nodes) cada runner processa em paralelo
+      - N8N_RUNNERS_MAX_CONCURRENCY=${N8N_RUNNERS_MAX_CONCURRENCY:-5}
+
+      ## Desliga o runner após N segundos ocioso (o launcher reinicia sob demanda)
+      - N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT=${N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT:-15}
+
+      ## Timeout máximo por tarefa (segundos). Evita Code Nodes com loop infinito.
+      - N8N_RUNNERS_TASK_TIMEOUT=${N8N_RUNNERS_TASK_TIMEOUT:-300}
+
+      ## Limite de heap do Node.js para o runner (isolado do worker)
+      - NODE_OPTIONS=--max-old-space-size=512
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5680/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    tmpfs:
+      - /tmp:size=256m
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 3
+      placement:
+        constraints:
+          - node.labels.role == worker
+          - node.labels.app == n8n
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+      update_config:
+        parallelism: 1
+        delay: 15s
+        order: start-first
+        failure_action: rollback
+
+networks:
+  swarm_public:
+    external: true
+    name: swarm_public
