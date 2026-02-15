@@ -294,23 +294,12 @@ services:
         - traefik.enable=1
         - traefik.http.services.evolution.loadbalancer.server.port=8080
         - traefik.http.services.evolution.loadbalancer.passHostHeader=true
-
-        # Manager (público): só /manager no entrypoint público
+        # Só /manager exposto no entrypoint público; API sem rota = só acessível na rede interna (ex.: http://evolution:8080)
         - traefik.http.routers.evolution-manager.rule=Host(`${EVOLUTION_HOST}`) && PathPrefix(`/manager`)
         - traefik.http.routers.evolution-manager.entrypoints=websecure
-        - traefik.http.routers.evolution-manager.priority=10
         - traefik.http.routers.evolution-manager.tls.certresolver=letsencryptresolver
         - traefik.http.routers.evolution-manager.service=evolution
         - traefik.http.routers.evolution-manager.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
-
-        # API: resto do host só de IPs internos; IP público recebe 403 (evita roteador catch-all de outra stack)
-        - traefik.http.middlewares.evolution-internal.ipwhitelist.sourcerange=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8
-        - traefik.http.routers.evolution-api.rule=Host(`${EVOLUTION_HOST}`) && !PathPrefix(`/manager`)
-        - traefik.http.routers.evolution-api.entrypoints=websecure
-        - traefik.http.routers.evolution-api.priority=1
-        - traefik.http.routers.evolution-api.tls.certresolver=letsencryptresolver
-        - traefik.http.routers.evolution-api.service=evolution
-        - traefik.http.routers.evolution-api.middlewares=evolution-internal,security-headers@file,rate-limit@file
 
 volumes:
   evolution_instances:
