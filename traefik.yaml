@@ -3,8 +3,8 @@ services:
   traefik:
     image: traefik:latest
     command:
-      # API / Dashboard
-      - "--api.dashboard=true"
+      # API / Dashboard (doc: https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/)
+      - "--api=true"
       - "--api.insecure=false"
 
       # Ping (obrigatório para o healthcheck)
@@ -96,17 +96,17 @@ services:
         - "traefik.enable=true"
         - "traefik.swarm.network=swarm_public"
 
-        # --- Router Dashboard (doc: PathPrefix /api e /dashboard obrigatórios; entrypoint websecure = HTTPS 443) ---
-        - "traefik.http.routers.traefik-dashboard.rule=Host(`${DASHBOARD_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
-        - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
-        - "traefik.http.routers.traefik-dashboard.tls=true"
-        - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.traefik-dashboard.service=api@internal"
+        # --- Router Dashboard (doc: rule com PathPrefix /api e /dashboard; service api@internal; dummy port p/ Swarm) ---
+        - "traefik.http.routers.dashboard.rule=Host(`${DASHBOARD_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+        - "traefik.http.routers.dashboard.entrypoints=websecure"
+        - "traefik.http.routers.dashboard.tls=true"
+        - "traefik.http.routers.dashboard.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.dashboard.service=api@internal"
         # Swarm exige port no serviço; api@internal não tem backend real — dummy port (doc Traefik)
         - "traefik.http.services.traefik-traefik.loadbalancer.server.port=9999"
 
         # Middlewares: CrowdSec -> Auth -> Headers@file -> RateLimit@file
-        - "traefik.http.routers.traefik-dashboard.middlewares=crowdsec-bouncer,traefik-auth,security-headers@file,rate-limit@file"
+        - "traefik.http.routers.dashboard.middlewares=crowdsec-bouncer,traefik-auth,security-headers@file,rate-limit@file"
 
         # --- MIDDLEWARES LOCAIS (só dashboard) ---
         #- "traefik.http.middlewares.traefik-auth.basicauth.users=caio:$$apr1$$ll89czOq$$oNIAsXgF2NZfrZp0JHZN2/"
