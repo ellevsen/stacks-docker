@@ -295,7 +295,7 @@ services:
         - traefik.http.services.evolution.loadbalancer.server.port=8080
         - traefik.http.services.evolution.loadbalancer.passHostHeader=true
         # Só /manager exposto no entrypoint público; API sem rota = só acessível na rede interna (ex.: http://evolution:8080)
-        - traefik.http.routers.evolution-manager.rule=Host(`${EVOLUTION_HOST}`) && PathPrefix(`/manager`)
+        - traefik.http.routers.evolution-manager.rule=Host(`${EVOLUTION_HOST}`)
         - traefik.http.routers.evolution-manager.entrypoints=websecure
         - traefik.http.routers.evolution-manager.tls.certresolver=letsencryptresolver
         - traefik.http.routers.evolution-manager.service=evolution
