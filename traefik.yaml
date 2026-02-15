@@ -21,6 +21,13 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
 
+      # Encoded chars (v3.6.7+): false = rejeitar para evitar split-view com backends não RFC 3986
+      - "--entrypoints.web.http.encodedCharacters.allowEncodedSlash=false"
+      - "--entrypoints.web.http.encodedCharacters.allowEncodedBackSlash=false"
+      - "--entrypoints.web.http.encodedCharacters.allowEncodedNullCharacter=false"
+      - "--entrypoints.websecure.http.encodedCharacters.allowEncodedSlash=false"
+      - "--entrypoints.websecure.http.encodedCharacters.allowEncodedBackSlash=false"
+      - "--entrypoints.websecure.http.encodedCharacters.allowEncodedNullCharacter=false"
 
       # TLS / Let's Encrypt
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
@@ -95,6 +102,8 @@ services:
         - "traefik.http.routers.traefik-dashboard.tls=true"
         - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.traefik-dashboard.service=api@internal"
+        # Swarm exige port no serviço; api@internal não tem backend real — dummy port (doc Traefik)
+        - "traefik.http.services.traefik-traefik.loadbalancer.server.port=9999"
 
         # Middlewares: CrowdSec -> Auth -> Headers@file -> RateLimit@file
         - "traefik.http.routers.traefik-dashboard.middlewares=crowdsec-bouncer,traefik-auth,security-headers@file,rate-limit@file"
