@@ -97,8 +97,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-    security_opt:
-      - no-new-privileges:true
 
     deploy:
       mode: replicated
