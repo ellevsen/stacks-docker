@@ -4,7 +4,7 @@
 services:
 
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:9.12.0
     networks:
       - swarm_public
     environment:
@@ -37,7 +37,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.role == manager
+          - node.labels.role == worker
       resources:
         limits:
           cpus: "0.5"
