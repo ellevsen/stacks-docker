@@ -1,0 +1,67 @@
+# pgAdmin 4 — cliente web para PostgreSQL, acessível via Traefik.
+# Defina no env do deploy: PGADMIN_DOMAIN, PGADMIN_DEFAULT_EMAIL, PGADMIN_DEFAULT_PASSWORD.
+
+services:
+
+  pgadmin:
+    image: dpage/pgadmin4:9.12.0
+    networks:
+      - swarm_public
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=True
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:80/misc/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == worker
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - traefik.enable=true
+        - traefik.swarm.network=swarm_public
+        - traefik.http.routers.pgadmin.rule=Host(`${PGADMIN_DOMAIN}`)
+        - traefik.http.routers.pgadmin.entrypoints=websecure
+        - traefik.http.routers.pgadmin.tls=true
+        - traefik.http.routers.pgadmin.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.pgadmin.service=pgadmin
+        - traefik.http.services.pgadmin.loadbalancer.server.port=80
+        - traefik.http.services.pgadmin.loadbalancer.passHostHeader=true
+        - traefik.http.routers.pgadmin.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
+
+volumes:
+  pgadmin_data:
+
+networks:
+  swarm_public:
+    external: true
+    name: swarm_public
