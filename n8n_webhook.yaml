@@ -1,7 +1,7 @@
 services:
 
   n8n_webhook:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:stable
     command: webhook
 
     networks:
@@ -130,7 +130,7 @@ services:
         - traefik.http.routers.n8n_webhook.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
   n8n_mcp:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:stable
     command: webhook
 
     networks:

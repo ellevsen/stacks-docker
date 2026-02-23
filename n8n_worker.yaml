@@ -1,7 +1,7 @@
 services:
 
   n8n_worker:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:stable
     command: worker --concurrency=15
 
     networks:
