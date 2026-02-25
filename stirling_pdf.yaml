@@ -18,7 +18,7 @@ services:
       - stirling_pdf_logs:/logs
 
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
