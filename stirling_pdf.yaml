@@ -1,0 +1,70 @@
+services:
+
+## --------------------------- STIRLING PDF --------------------------- ##
+
+  stirling_pdf:
+    image: stirlingtools/stirling-pdf:latest
+
+    networks:
+      - swarm_public
+
+    environment:
+      - MODE=BOTH
+      - SECURITY_ENABLELOGIN=${STIRLING_PDF_SECURITY_ENABLELOGIN:-false}
+      - LANGS=${STIRLING_PDF_LANGS:-en_GB}
+
+    volumes:
+      - stirling_pdf_configs:/configs
+      - stirling_pdf_logs:/logs
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2048M
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.stirling_pdf.rule=Host(`${STIRLING_PDF_DOMAIN}`)
+        - traefik.http.routers.stirling_pdf.entrypoints=websecure
+        - traefik.http.routers.stirling_pdf.priority=1
+        - traefik.http.routers.stirling_pdf.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.stirling_pdf.service=stirling_pdf
+        - traefik.http.services.stirling_pdf.loadbalancer.server.port=8080
+        - traefik.http.services.stirling_pdf.loadbalancer.passHostHeader=1
+        - traefik.http.routers.stirling_pdf.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
+
+networks:
+  swarm_public:
+    external: true
+    name: swarm_public
+
+volumes:
+  stirling_pdf_configs:
+    external: true
+  stirling_pdf_logs:
+    external: true
