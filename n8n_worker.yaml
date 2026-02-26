@@ -123,3 +123,7 @@ networks:
   swarm_public:
     external: true
     name: swarm_public
+
+volumes:
+  n8n_data:
+    name: n8n_nodes_data

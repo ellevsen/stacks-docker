@@ -142,4 +142,4 @@ networks:
 
 volumes:
   n8n_data:
-    name: n8n_data
+    name: n8n_nodes_data
