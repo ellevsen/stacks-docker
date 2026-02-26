@@ -85,6 +85,10 @@ services:
       ## Timezone
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
 
+    ## Mesmo volume do editor: community nodes disponíveis no webhook
+    volumes:
+      - n8n_data:/home/node/.n8n
+
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
       interval: 30s
@@ -202,6 +206,10 @@ services:
       ## Timezone
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - TZ=${TZ}
+
+    ## Mesmo volume do editor: community nodes disponíveis no MCP
+    volumes:
+      - n8n_data:/home/node/.n8n
 
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]

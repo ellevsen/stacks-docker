@@ -100,6 +100,10 @@ services:
         max-size: "10m"
         max-file: "3"
 
+    ## Persiste community nodes e estado local (sobrevive a atualizações da stack)
+    volumes:
+      - n8n_data:/home/node/.n8n
+
     security_opt:
       - no-new-privileges:true
 
@@ -135,3 +139,7 @@ networks:
   swarm_public:
     external: true
     name: swarm_public
+
+volumes:
+  n8n_data:
+    name: n8n_data

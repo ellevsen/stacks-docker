@@ -91,6 +91,10 @@ services:
       retries: 3
       start_period: 30s
 
+    ## Mesmo volume do editor: community nodes disponíveis nos workers
+    volumes:
+      - n8n_data:/home/node/.n8n
+
     logging:
       driver: json-file
       options:
