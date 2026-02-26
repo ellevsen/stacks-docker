@@ -204,9 +204,6 @@ services:
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - TZ=${TZ}
 
-    ## Mesmo volume do editor: community nodes disponíveis no MCP
-    volumes:
-      - n8n_data:/home/node/.n8n
 
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
