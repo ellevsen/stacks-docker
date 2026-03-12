@@ -8,10 +8,14 @@ services:
       - swarm_public
 
     environment:
-      - GOTENBERG_API_DISABLE_HEALTH_CHECK_LOG=${GOTENBERG_API_DISABLE_HEALTH_CHECK_LOG:-true}
+      - API_DISABLE_HEALTH_CHECK_LOGGING=${API_DISABLE_HEALTH_CHECK_LOGGING:-true}
+      - API_BODY_LIMIT=${GOTENBERG_API_BODY_LIMIT:-250MB}
+      - API_TIMEOUT=${GOTENBERG_API_TIMEOUT:-600s}
+      - LIBREOFFICE_START_TIMEOUT=${GOTENBERG_LIBREOFFICE_START_TIMEOUT:-60s}
+      - CHROMIUM_START_TIMEOUT=${GOTENBERG_CHROMIUM_START_TIMEOUT:-60s}
       # Opcional: desabilitar módulos para reduzir memória
-      # - GOTENBERG_CHROMIUM_DISABLE=true
-      # - GOTENBERG_LIBREOFFICE_DISABLE=true
+      # - CHROMIUM_DISABLE_ROUTES=true
+      # - LIBREOFFICE_DISABLE_ROUTES=true
 
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:3000/health || exit 1"]
@@ -38,7 +42,7 @@ services:
       resources:
         limits:
           cpus: "4"
-          memory: 4096M
+          memory: 6144M
       restart_policy:
         condition: any
         delay: 10s
@@ -52,7 +56,11 @@ services:
         - traefik.http.routers.gotenberg.service=gotenberg
         - traefik.http.services.gotenberg.loadbalancer.server.port=3000
         - traefik.http.services.gotenberg.loadbalancer.passHostHeader=1
-        - traefik.http.routers.gotenberg.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
+        - traefik.http.middlewares.gotenberg-body-limit.buffering.maxRequestBodyBytes=262144000
+        - traefik.http.middlewares.gotenberg-body-limit.buffering.maxResponseBodyBytes=262144000
+        - traefik.http.middlewares.gotenberg-body-limit.buffering.memRequestBodyBytes=2097152
+        - traefik.http.middlewares.gotenberg-body-limit.buffering.memResponseBodyBytes=2097152
+        - traefik.http.routers.gotenberg.middlewares=gotenberg-body-limit@swarm,crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
 
 networks:
   swarm_public:
