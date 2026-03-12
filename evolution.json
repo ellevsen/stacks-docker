@@ -1,0 +1,172 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "resource": "messages-api",
+          "instanceName": "={{ $('dados buffer').item.json.instancia }}",
+          "remoteJid": "={{ $('dados buffer').item.json.id }}",
+          "messageText": "={{ $('AI Agent').item.json.output.resposta }}",
+          "options_message": {
+            "quoted": {
+              "messageQuoted": {
+                "messageId": "={{ $('dados buffer').item.json.message_id }}"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-evolution-api.evolutionApi",
+        "typeVersion": 1,
+        "position": [
+          1936,
+          -80
+        ],
+        "id": "4e7772c1-b5b5-4a5a-a8f0-41e23fce3d5f",
+        "name": "Evolution API17",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "evolutionApi": {
+            "id": "9FGL6b50TijPClIO",
+            "name": "Evolution account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "chat-api",
+          "operation": "send-presence",
+          "instanceName": "={{ $('dados buffer').item.json.instancia }}",
+          "remoteJid": "={{ $('dados buffer').item.json.id }}",
+          "delay": 10000
+        },
+        "type": "n8n-nodes-evolution-api.evolutionApi",
+        "typeVersion": 1,
+        "position": [
+          1744,
+          -96
+        ],
+        "id": "81ce6a1e-c863-4f1c-81e3-75a13a6f4f26",
+        "name": "Evolution API18",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "evolutionApi": {
+            "id": "9FGL6b50TijPClIO",
+            "name": "Evolution account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "resource": "messages-api",
+          "operation": "send-reaction",
+          "instanceName": "={{ $('dados buffer').item.json.instancia }}",
+          "remoteJid": "={{ $('dados buffer').item.json.id }}",
+          "messageId": "={{ $('dados buffer').item.json.message_id }}",
+          "fromMe": false,
+          "reaction": "❤"
+        },
+        "type": "n8n-nodes-evolution-api.evolutionApi",
+        "typeVersion": 1,
+        "position": [
+          1536,
+          -96
+        ],
+        "id": "ae2909fd-626e-40c7-a3f4-bc58255c309d",
+        "name": "Evolution API2",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "evolutionApi": {
+            "id": "9FGL6b50TijPClIO",
+            "name": "Evolution account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Evolution API17": {
+        "main": [
+          []
+        ]
+      },
+      "Evolution API18": {
+        "main": [
+          [
+            {
+              "node": "Evolution API17",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Evolution API2": {
+        "main": [
+          [
+            {
+              "node": "Evolution API18",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "instanceId": "d63a4bf6c9088c48304c628bc4e5b9ec0cf0f9b32e3e95994c2dd1f06c28fd88"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "resource": "messages-api",
+          "instanceName": "={{ $('dados buffer').item.json.instancia }}",
+          "remoteJid": "={{ $('dados buffer').item.json.id }}",
+          "messageText": "={{ $('AI Agent').item.json.output.resposta }}",
+          "options_message": {
+            "quoted": {
+              "messageQuoted": {
+                "messageId": "={{ $('dados buffer').item.json.message_id }}"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-evolution-api.evolutionApi",
+        "typeVersion": 1,
+        "position": [
+          1936,
+          -80
+        ],
+        "id": "4e7772c1-b5b5-4a5a-a8f0-41e23fce3d5f",
+        "name": "Evolution API17",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "evolutionApi": {
+            "id": "9FGL6b50TijPClIO",
+            "name": "Evolution account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Evolution API17": {
+        "main": [
+          []
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "instanceId": "d63a4bf6c9088c48304c628bc4e5b9ec0cf0f9b32e3e95994c2dd1f06c28fd88"
+    }
+  }

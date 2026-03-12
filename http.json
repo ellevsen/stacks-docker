@@ -1,0 +1,23 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          -3504,
+          2688
+        ],
+        "id": "2afed0bb-c722-4414-88ce-bbad2dcb1278",
+        "name": "HTTP Request1"
+      }
+    ],
+    "connections": {},
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "d63a4bf6c9088c48304c628bc4e5b9ec0cf0f9b32e3e95994c2dd1f06c28fd88"
+    }
+  }
