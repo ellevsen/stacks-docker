@@ -13,7 +13,7 @@ services:
       - API_TIMEOUT=${GOTENBERG_API_TIMEOUT:-600s}
       - LIBREOFFICE_START_TIMEOUT=${GOTENBERG_LIBREOFFICE_START_TIMEOUT:-60s}
       - CHROMIUM_START_TIMEOUT=${GOTENBERG_CHROMIUM_START_TIMEOUT:-60s}
-      # Opcional: desabilitar módulos para reduzir memória
+      # Opcional: desabilitar módulos para reduzir memória a
       # - CHROMIUM_DISABLE_ROUTES=true
       # - LIBREOFFICE_DISABLE_ROUTES=true
 
