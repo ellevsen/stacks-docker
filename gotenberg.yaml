@@ -8,7 +8,7 @@ services:
       - swarm_public
 
     environment:
-      - GOTENBERG_API_DISABLE_HEALTH_CHECK_LOG=${GOTENBERG_API_DISABLE_HEALTH_CHECK_LOG:-false}
+      - GOTENBERG_API_DISABLE_HEALTH_CHECK_LOG=${GOTENBERG_API_DISABLE_HEALTH_CHECK_LOG:-true}
       # Opcional: desabilitar módulos para reduzir memória
       # - GOTENBERG_CHROMIUM_DISABLE=true
       # - GOTENBERG_LIBREOFFICE_DISABLE=true
@@ -37,8 +37,8 @@ services:
           - node.labels.role == worker
       resources:
         limits:
-          cpus: "2"
-          memory: 2048M
+          cpus: "4"
+          memory: 4096M
       restart_policy:
         condition: any
         delay: 10s
