@@ -102,7 +102,7 @@ services:
       - ZEP_LOG_LEVEL=${ZEP_LOG_LEVEL:-info}
       - ZEP_DEVELOPMENT=false
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000/ || exit 1"]
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
