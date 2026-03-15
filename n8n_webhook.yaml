@@ -105,6 +105,10 @@ services:
     deploy:
       mode: replicated
       replicas: 2
+      update_config:
+        delay: 30s
+        order: start-first
+        failure_action: rollback
       placement:
         constraints:
           - node.labels.role == worker
