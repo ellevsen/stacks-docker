@@ -14,8 +14,10 @@ services:
     volumes:
       - uptime_kuma_data:/app/data
 
+    # Official image uses a Go binary for HEALTHCHECK; override uses Node (guaranteed in image).
+    # No dedicated /health endpoint; GET root as per https://github.com/louislam/uptime-kuma/issues/4831
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3001/ || exit 1"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3001/', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
