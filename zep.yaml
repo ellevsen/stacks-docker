@@ -1,0 +1,156 @@
+# Zep: memory store + NLP. Single stack (zepdb + zepnlp + zep).
+# Defina no env do deploy: ZEP_DOMAIN, ZEP_POSTGRES_PASSWORD, ZEP_OPENAI_API_KEY,
+# ZEP_ADMIN_BASIC_AUTH_USERS (ex: user:$apr1$xxx$yyy — gere com: echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g).
+
+services:
+
+## --------------------------- ZEP POSTGRES --------------------------- ##
+
+  zepdb:
+    image: ghcr.io/getzep/postgres:latest
+    networks:
+      - swarm_public
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${ZEP_POSTGRES_PASSWORD}
+    volumes:
+      - zepdb_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -q"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+
+## --------------------------- ZEP NLP --------------------------- ##
+
+  zepnlp:
+    image: ghcr.io/getzep/zep-nlp-server:latest
+    networks:
+      - swarm_public
+    environment:
+      - ZEP_OPENAI_API_KEY=${ZEP_OPENAI_API_KEY}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+
+## --------------------------- ZEP CLOUD --------------------------- ##
+
+  zep:
+    image: ghcr.io/getzep/zep-cloud:latest
+    networks:
+      - swarm_public
+    environment:
+      - ZEP_STORE_TYPE=postgres
+      - ZEP_STORE_POSTGRES_DSN=postgres://postgres:${ZEP_POSTGRES_PASSWORD}@zepdb:5432/postgres?sslmode=disable
+      - ZEP_NLP_SERVER_URL=http://zepnlp:5557
+      - ZEP_OPENAI_API_KEY=${ZEP_OPENAI_API_KEY}
+      - ZEP_LLM_MODEL=${ZEP_LLM_MODEL:-gpt-3.5-turbo}
+      - ZEP_MEMORY_MESSAGE_WINDOW=${ZEP_MEMORY_MESSAGE_WINDOW:-12}
+      - ZEP_EXTRACTORS_DOCUMENTS_EMBEDDINGS_ENABLED=true
+      - ZEP_EXTRACTORS_DOCUMENTS_EMBEDDINGS_DIMENSIONS=1536
+      - ZEP_EXTRACTORS_DOCUMENTS_EMBEDDINGS_SERVICE=openai
+      - ZEP_EXTRACTORS_DOCUMENTS_EMBEDDINGS_CHUNK_SIZE=1000
+      - ZEP_EXTRACTORS_MESSAGES_SUMMARIZER_ENABLED=true
+      - ZEP_EXTRACTORS_MESSAGES_ENTITIES_ENABLED=true
+      - ZEP_EXTRACTORS_MESSAGES_INTENT_ENABLED=true
+      - ZEP_EXTRACTORS_MESSAGES_EMBEDDINGS_ENABLED=true
+      - ZEP_EXTRACTORS_MESSAGES_EMBEDDINGS_DIMENSIONS=1536
+      - ZEP_EXTRACTORS_MESSAGES_EMBEDDINGS_SERVICE=openai
+      - ZEP_SERVER_HOST=0.0.0.0
+      - ZEP_SERVER_PORT=8000
+      - ZEP_SERVER_WEB_ENABLED=true
+      - ZEP_LOG_LEVEL=${ZEP_LOG_LEVEL:-info}
+      - ZEP_DEVELOPMENT=false
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.zep.rule=Host(`${ZEP_DOMAIN}`)
+        - traefik.http.routers.zep.entrypoints=websecure
+        - traefik.http.routers.zep.priority=1
+        - traefik.http.routers.zep.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.zep.service=zep
+        - traefik.http.services.zep.loadbalancer.server.port=8000
+        - traefik.http.services.zep.loadbalancer.passHostHeader=1
+        - traefik.http.routers.zep.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file
+        - traefik.http.routers.zep_admin.rule=(Host(`${ZEP_DOMAIN}`) && (PathPrefix(`/admin`) || PathPrefix(`/api`)))
+        - traefik.http.routers.zep_admin.entrypoints=websecure
+        - traefik.http.routers.zep_admin.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.zep_admin.service=zep_admin
+        - traefik.http.services.zep_admin.loadbalancer.server.port=8000
+        - traefik.http.routers.zep_admin.middlewares=zep-auth@docker
+        - traefik.http.middlewares.zep-auth.basicauth.users=${ZEP_ADMIN_BASIC_AUTH_USERS}
+
+networks:
+  swarm_public:
+    external: true
+    name: swarm_public
+
+volumes:
+  zepdb_data:
+    external: true
