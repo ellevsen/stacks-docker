@@ -13,7 +13,6 @@ services:
       - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}
       - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME:-wordpress}
       - WORDPRESS_TABLE_PREFIX=${WORDPRESS_TABLE_PREFIX:-wp_}
-      - WORDPRESS_CONFIG_EXTRA=${WORDPRESS_CONFIG_EXTRA}
 
     volumes:
       # Persist uploads / themes / plugins
@@ -53,7 +52,7 @@ services:
         - "traefik.enable=true"
         - "traefik.swarm.network=swarm_public"
         # Adjust the host to the desired domain, e.g. blog.caiov.dev
-        - "traefik.http.routers.wordpress.rule=Host(`blog.caiov.dev`)"
+        - "traefik.http.routers.wordpress.rule=Host(`${WORDPRESS_DOMAIN}`)"
         - "traefik.http.routers.wordpress.entrypoints=websecure"
         - "traefik.http.routers.wordpress.tls.certresolver=letsencryptresolver"
         - "traefik.http.services.wordpress.loadbalancer.server.port=80"
