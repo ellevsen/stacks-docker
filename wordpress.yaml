@@ -1,0 +1,119 @@
+services:
+
+  wordpress:
+    image: wordpress:latest
+    depends_on:
+      - wordpress_db
+    networks:
+      - swarm_public
+
+    environment:
+      - WORDPRESS_DB_HOST=wordpress_db:3306
+      - WORDPRESS_DB_USER=${WORDPRESS_DB_USER:-wordpress}
+      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}
+      - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME:-wordpress}
+      - WORDPRESS_TABLE_PREFIX=${WORDPRESS_TABLE_PREFIX:-wp_}
+      - WORDPRESS_CONFIG_EXTRA=${WORDPRESS_CONFIG_EXTRA}
+
+    volumes:
+      # Persist uploads / themes / plugins
+      - wordpress_data:/var/www/html/wp-content
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1/wp-login.php || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - "traefik.enable=true"
+        - "traefik.swarm.network=swarm_public"
+        # Adjust the host to the desired domain, e.g. blog.caiov.dev
+        - "traefik.http.routers.wordpress.rule=Host(`blog.caiov.dev`)"
+        - "traefik.http.routers.wordpress.entrypoints=websecure"
+        - "traefik.http.routers.wordpress.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.wordpress.loadbalancer.server.port=80"
+        - "traefik.http.routers.wordpress.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file"
+
+  wordpress_db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - swarm_public
+
+    environment:
+      - MYSQL_DATABASE=${WORDPRESS_DB_NAME:-wordpress}
+      - MYSQL_USER=${WORDPRESS_DB_USER:-wordpress}
+      - MYSQL_PASSWORD=${WORDPRESS_DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${WORDPRESS_DB_ROOT_PASSWORD:-change-me}
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+
+    volumes:
+      - wordpress_db_data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u${MYSQL_USER:-wordpress} -p${MYSQL_PASSWORD:-$WORDPRESS_DB_PASSWORD} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 5
+
+volumes:
+  wordpress_data:
+    external: true
+    name: wordpress_data
+  wordpress_db_data:
+    external: true
+    name: wordpress_db_data
+
+networks:
+  swarm_public:
+    external: true
