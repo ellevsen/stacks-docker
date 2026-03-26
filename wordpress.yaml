@@ -18,7 +18,7 @@ services:
       # Persist uploads / themes / plugins
       - wordpress_data:/var/www/html/wp-content
     configs:
-      - source: uploads_ini
+      - source: uploads.ini
         target: /usr/local/etc/php/conf.d/uploads.ini
     logging:
       driver: json-file
@@ -113,5 +113,5 @@ networks:
     external: true
 
 configs:
-  uploads_ini:
+  uploads.ini:
     external: true
