@@ -17,7 +17,9 @@ services:
     volumes:
       # Persist uploads / themes / plugins
       - wordpress_data:/var/www/html/wp-content
-
+    configs:
+      - source: uploads_ini
+        target: /usr/local/etc/php/conf.d/uploads.ini
     logging:
       driver: json-file
       options:
@@ -108,4 +110,8 @@ volumes:
 
 networks:
   swarm_public:
+    external: true
+
+configs:
+  uploads_ini:
     external: true
