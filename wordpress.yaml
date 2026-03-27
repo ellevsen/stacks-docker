@@ -52,7 +52,7 @@ services:
         - "traefik.http.routers.wordpress.entrypoints=websecure"
         - "traefik.http.routers.wordpress.tls.certresolver=letsencryptresolver"
         - "traefik.http.services.wordpress.loadbalancer.server.port=80"
-        - "traefik.http.routers.wordpress.middlewares=crowdsec-bouncer@swarm,security-headers@file,rate-limit@file"
+        - "traefik.http.routers.wordpress.middlewares=crowdsec-bouncer@swarm,rate-limit@file"
 
   wordpress_db:
     image: mysql:8.0
